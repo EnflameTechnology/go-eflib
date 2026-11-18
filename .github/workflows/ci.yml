@@ -13,6 +13,7 @@ env:
   CI_IMAGE: registry-egc.enflame-tech.com/artifacts/qic_ubuntu_1804_gcc7:1.8.2
   SAST_REPO: EnflameTechnology/sast
   SAST_BRANCH: main
+  REPO_NAME: go-eflib
 
 jobs:
   all-ci-check:
@@ -36,13 +37,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Required for full git history to compare changes
-          path: ./${{env.SAST_REPO}}
+          path: ./${{env.REPO_NAME}}
           ssh-key: ${{ secrets.SSH_PUB_KEY }}
 
       - name: Run static code analysis
         run: |
           sudo docker run --rm \
-            -v "$(pwd)/${{env.SAST_REPO}}:/app" \
+            -v "$(pwd)/${{env.REPO_NAME}}:/app" \
             -v "$(pwd)/sast:/sast" \
             -u "$(id -u):$(id -g)" \
             -w /app \
@@ -62,13 +63,13 @@ jobs:
             -v /home/pypi_packages:/home/pypi_packages \
             -w /app \
             "${{ env.CI_IMAGE }}" \
-            bash -c 'sudo git config --global --add safe.directory /app/${{env.SAST_REPO}};cd /app/${{env.SAST_REPO}}/ && bash ./build.sh all'
+            bash -c 'sudo git config --global --add safe.directory /app/${{env.REPO_NAME}};cd /app/${{env.REPO_NAME}}/ && bash ./build.sh all'
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{env.SAST_REPO}}-wheel
-          path: ${{ github.workspace }}/${{env.SAST_REPO}}/dist/**
+          name: ${{env.REPO_NAME}}-wheel
+          path: ${{ github.workspace }}/${{env.REPO_NAME}}/dist/**
           if-no-files-found: error
 
       - name: Clean up
@@ -76,7 +77,7 @@ jobs:
         run: |
           set -euo pipefail
           WORKSPACE="${{ github.workspace }}"
-          for repo in ${{env.SAST_REPO}} sast; do
+          for repo in ${{env.REPO_NAME}} sast; do
             TARGET_PATH="${WORKSPACE}/${repo}"
             if [ -d "${TARGET_PATH}" ]; then
               sudo rm -rf "${TARGET_PATH}"
