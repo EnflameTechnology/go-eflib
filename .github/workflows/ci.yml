@@ -36,13 +36,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Required for full git history to compare changes
-          path: ./go-eflib
+          path: ./${{env.SAST_REPO}}
           ssh-key: ${{ secrets.SSH_PUB_KEY }}
 
       - name: Run static code analysis
         run: |
           sudo docker run --rm \
-            -v "$(pwd)/go-eflib:/app" \
+            -v "$(pwd)/${{env.SAST_REPO}}:/app" \
             -v "$(pwd)/sast:/sast" \
             -u "$(id -u):$(id -g)" \
             -w /app \
@@ -62,13 +62,13 @@ jobs:
             -v /home/pypi_packages:/home/pypi_packages \
             -w /app \
             "${{ env.CI_IMAGE }}" \
-            bash -c 'sudo git config --global --add safe.directory /app/go-eflib;cd /app/go-eflib/ && bash ./build.sh all'
+            bash -c 'sudo git config --global --add safe.directory /app/${{env.SAST_REPO}};cd /app/${{env.SAST_REPO}}/ && bash ./build.sh all'
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: go-eflib-wheel
-          path: ${{ github.workspace }}/go-eflib/dist/**
+          name: ${{env.SAST_REPO}}-wheel
+          path: ${{ github.workspace }}/${{env.SAST_REPO}}/dist/**
           if-no-files-found: error
 
       - name: Clean up
@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
           WORKSPACE="${{ github.workspace }}"
-          for repo in go-eflib sast; do
+          for repo in ${{env.SAST_REPO}} sast; do
             TARGET_PATH="${WORKSPACE}/${repo}"
             if [ -d "${TARGET_PATH}" ]; then
               sudo rm -rf "${TARGET_PATH}"
